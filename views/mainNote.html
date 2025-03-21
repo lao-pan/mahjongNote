@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本麻将计分板</title>
+    <link rel="stylesheet" href="../layui/css/layui.css">
+</head>
+
+<body>
+    <div class="layui-container">
+        <div class="layui-row">
+            <div class="layui-col-xs12">
+                <h1 class="layui-text-center">计分板</h1>
+            </div>
+        </div>
+
+        <!-- 玩家信息输入 -->
+        <div class="layui-row">
+            <div class="layui-col-xs12">
+                <fieldset class="layui-elem-field">
+                    <legend>玩家信息</legend>
+                    <div class="layui-field-box">
+                        <form class="layui-form">
+                            <div class="layui-form-item">
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">玩家1</label>
+                                    <div class="layui-input-inline">
+                                        <input type="text" name="player1" required placeholder="玩家1"
+                                            class="layui-input">
+                                    </div>
+                                </div>
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">玩家2</label>
+                                    <div class="layui-input-inline">
+                                        <input type="text" name="player2" required placeholder="玩家2"
+                                            class="layui-input">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">玩家3</label>
+                                    <div class="layui-input-inline">
+                                        <input type="text" name="player3" required placeholder="玩家3"
+                                            class="layui-input">
+                                    </div>
+                                </div>
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">玩家4</label>
+                                    <div class="layui-input-inline">
+                                        <input type="text" name="player4" required placeholder="玩家4"
+                                            class="layui-input">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <button class="layui-btn layui-btn-normal" type="button">确认玩家</button>
+                            </div>
+                        </form>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+
+        <!-- 修改后的计分板表格 -->
+        <div class="layui-row">
+            <div class="layui-col-xs12">
+                <fieldset class="layui-elem-field">
+                    <legend>计分板</legend>
+                    <div class="layui-field-box">
+                        <table class="layui-table">
+                            <thead>
+                                <tr>
+                                    <th>名次</th>
+                                    <th>姓名</th>
+                                    <th>局数</th>
+                                    <th>成绩</th>
+                                    <th>平均顺位</th>
+                                    <th>平均得分</th>
+                                    <th>击飞率</th>
+                                    <th>一位</th>
+                                    <th>二位</th>
+                                    <th>三位</th>
+                                    <th>四位</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 动态生成分数行 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+<script src="../layui/layui.js"></script>
+<script>
+    const CONFIG = {
+        players: [
+            { name: '', rounds: 0, score: 0, avgRank: 0, avgPoints: 0, blowRate: '0.00%', first: 0, second: 0, third: 0, fourth: 0 }
+        ],
+        scores: [] // 用于存储每局的分数
+    };
+
+    // 确认玩家按钮点击事件
+    document.querySelector('.layui-btn-normal').addEventListener('click', () => {
+        CONFIG.players = [
+            { name: document.querySelector('input[name="player1"]').value, rounds: 0, score: 0, avgRank: 0, avgPoints: 0, blowRate: '0.00%', first: 0, second: 0, third: 0, fourth: 0 },
+            { name: document.querySelector('input[name="player2"]').value, rounds: 0, score: 0, avgRank: 0, avgPoints: 0, blowRate: '0.00%', first: 0, second: 0, third: 0, fourth: 0 },
+            { name: document.querySelector('input[name="player3"]').value, rounds: 0, score: 0, avgRank: 0, avgPoints: 0, blowRate: '0.00%', first: 0, second: 0, third: 0, fourth: 0 },
+            { name: document.querySelector('input[name="player4"]').value, rounds: 0, score: 0, avgRank: 0, avgPoints: 0, blowRate: '0.00%', first: 0, second: 0, third: 0, fourth: 0 }
+        ];
+
+        if (CONFIG.players.every(player => player.name)) {
+            alert('玩家信息已确认！');
+            createScoreInputDiv(); // 创建记录分数的输入区域
+            updateScoreTable(); // 初始化计分板
+        } else {
+            alert('请填写所有玩家名称！');
+        }
+    });
+
+    // 创建记录分数的输入区域
+    function createScoreInputDiv() {
+        // 如果已经存在分数输入区域，则不重复创建
+        if (document.querySelector('#score-input-div')) return;
+
+        const container = document.querySelector('.layui-container');
+        const scoreInputDiv = document.createElement('div');
+        scoreInputDiv.id = 'score-input-div';
+        scoreInputDiv.className = 'layui-row';
+        scoreInputDiv.innerHTML = `
+            <fieldset class="layui-elem-field">
+                <legend>记录分数</legend>
+                <div class="layui-field-box">
+                    <form class="layui-form">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">${CONFIG.players[0].name}</label>
+                                <div class="layui-input-inline">
+                                    <input type="number" name="score1" placeholder="分数" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">${CONFIG.players[1].name}</label>
+                                <div class="layui-input-inline">
+                                    <input type="number" name="score2" placeholder="分数" class="layui-input">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">${CONFIG.players[2].name}</label>
+                                <div class="layui-input-inline">
+                                    <input type="number" name="score3" placeholder="分数" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">${CONFIG.players[3].name}</label>
+                                <div class="layui-input-inline">
+                                    <input type="number" name="score4" placeholder="分数" class="layui-input">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <button class="layui-btn layui-btn-primary" type="button" id="add-score-btn">提交分数</button>
+                        </div>
+                    </form>
+                </div>
+            </fieldset>
+        `;
+        container.insertBefore(scoreInputDiv, container.lastElementChild);
+
+        // 添加分数提交按钮事件
+        document.querySelector('#add-score-btn').addEventListener('click', addScores);
+    }
+
+    // 添加分数并更新计分板
+    function addScores() {
+        const scores = CONFIG.players.map((_, index) => {
+            return parseInt(document.querySelector(`input[name="score${index + 1}"]`).value) || 0;
+        });
+
+        // 计算成绩并更新玩家数据
+        scores.forEach((score, index) => {
+            const player = CONFIG.players[index];
+            const rankBonus = [15, 5, -5, -15]; // 马的值
+            const rank = scores
+                .map((s, i) => ({ score: s, index: i }))
+                .sort((a, b) => b.score - a.score) // 按分数从高到低排序
+                .findIndex(item => item.index === index); // 找到当前玩家的名次
+
+            // 按公式计算成绩
+            const calculatedScore = (score - 25000) / 1000 + rankBonus[rank];
+
+            // 更新玩家数据
+            player.rounds += 1;
+            player.score += calculatedScore; // 累计总分数（成绩）
+            player.totalInputScore = (player.totalInputScore || 0) + score; // 累计记录分数
+            player.avgPoints = (player.totalInputScore / player.rounds).toFixed(1); // 平均得分 = 记录分数总和 ÷ 局数，保留一位小数
+            player.avgRank = ((player.avgRank * (player.rounds - 1) + (rank + 1)) / player.rounds).toFixed(1); // 平均顺位，保留一位小数
+            player.first += rank === 0 ? 1 : 0;
+            player.second += rank === 1 ? 1 : 0;
+            player.third += rank === 2 ? 1 : 0;
+            player.fourth += rank === 3 ? 1 : 0;
+            player.blowRate = ((player.fourth / player.rounds) * 100).toFixed(1) + '%'; // 击飞率，保留一位小数
+        });
+
+        // 更新计分板
+        updateScoreTable();
+    }
+
+    // 更新计分板
+    function updateScoreTable() {
+        const tbody = document.querySelector('.layui-table tbody');
+        tbody.innerHTML = ''; // 清空表格内容
+
+        CONFIG.players
+            .sort((a, b) => b.score - a.score) // 按总分数排序
+            .forEach((player, index) => {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${player.name}</td>
+                    <td>${player.rounds}</td>
+                    <td>${player.score.toFixed(1)}</td> <!-- 总分数保留一位小数 -->
+                    <td>${player.avgRank}</td>
+                    <td>${player.avgPoints}</td> <!-- 平均得分保留一位小数 -->
+                    <td>${player.blowRate}</td>
+                    <td>${player.first}</td>
+                    <td>${player.second}</td>
+                    <td>${player.third}</td>
+                    <td>${player.fourth}</td>
+                `;
+                tbody.appendChild(newRow);
+            });
+    }
+</script>
+
+</html>
