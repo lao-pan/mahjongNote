@@ -63,10 +63,49 @@
                 </fieldset>
             </div>
         </div>
-
+        <div id="score-input-div" class="layui-row">
+            <fieldset class="layui-elem-field">
+                <legend>记录分数</legend>
+                <div class="layui-field-box">
+                    <form class="layui-form">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label" id="player1-label"></label>
+                                <div class="layui-input-inline">
+                                    <input type="number" name="score1" placeholder="分数" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label" id="player2-label"></label>
+                                <div class="layui-input-inline">
+                                    <input type="number" name="score2" placeholder="分数" class="layui-input">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label" id="player3-label"></label>
+                                <div class="layui-input-inline">
+                                    <input type="number" name="score3" placeholder="分数" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label" id="player4-label"></label>
+                                <div class="layui-input-inline">
+                                    <input type="number" name="score4" placeholder="分数" class="layui-input">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <button class="layui-btn layui-btn-primary" type="button" id="add-score-btn">提交分数</button>
+                        </div>
+                    </form>
+                </div>
+            </fieldset>
+        </div>
         <!-- 修改后的计分板表格 -->
         <div class="layui-row">
-            <div class="layui-col-xs12">
+            <div class="layui-col-xs8">
                 <fieldset class="layui-elem-field">
                     <legend>计分板</legend>
                     <div class="layui-field-box">
@@ -93,18 +132,42 @@
                     </div>
                 </fieldset>
             </div>
+            <div class="layui-col-xs4">
+                <fieldset class="layui-elem-field">
+                    <legend>历史记录</legend>
+                    <div class="layui-field-box" id="history-records">
+                        <!-- 动态生成历史记录 -->
+                    </div>
+                </fieldset>
+            </div>
         </div>
     </div>
+
 
 
 </body>
 <script src="../layui/layui.js"></script>
 <script>
+    // 初始化数据
     const CONFIG = {
-        players: [
-            { name: '', rounds: 0, score: 0, avgRank: 0, avgPoints: 0, blowRate: '0.00%', first: 0, second: 0, third: 0, fourth: 0 }
-        ],
-        scores: [] // 用于存储每局的分数
+        players: JSON.parse(localStorage.getItem('players')) || [], // 从 localStorage 加载玩家数据
+        scores: JSON.parse(localStorage.getItem('scores')) || [] // 从 localStorage 加载历史记录
+    };
+
+    // 页面加载时初始化
+    window.onload = () => {
+        if (CONFIG.players.length > 0) {
+            // 如果有玩家数据，初始化分数输入区域和计分板
+            initializeScoreInputDiv();
+            updateScoreTable();
+            updateHistoryRecords();
+        } else {
+            // 如果没有玩家数据，隐藏分数输入区域
+            document.querySelector('#score-input-div').style.display = 'none';
+        }
+
+        // 初始化提交分数按钮的事件监听器
+        document.querySelector('#add-score-btn').addEventListener('click', addScores);
     };
 
     // 确认玩家按钮点击事件
@@ -118,66 +181,24 @@
 
         if (CONFIG.players.every(player => player.name)) {
             alert('玩家信息已确认！');
-            createScoreInputDiv(); // 创建记录分数的输入区域
+            localStorage.removeItem('scores'); // 清空历史记录
+            CONFIG.scores = []; // 清空内存中的历史记录
+            initializeScoreInputDiv(); // 初始化分数输入区域
             updateScoreTable(); // 初始化计分板
+            updateHistoryRecords(); // 清空历史记录显示
+            saveToLocalStorage(); // 保存到 localStorage
+            document.querySelector('#score-input-div').style.display = 'block'; // 显示分数输入区域
         } else {
             alert('请填写所有玩家名称！');
         }
     });
 
-    // 创建记录分数的输入区域
-    function createScoreInputDiv() {
-        // 如果已经存在分数输入区域，则不重复创建
-        if (document.querySelector('#score-input-div')) return;
-
-        const container = document.querySelector('.layui-container');
-        const scoreInputDiv = document.createElement('div');
-        scoreInputDiv.id = 'score-input-div';
-        scoreInputDiv.className = 'layui-row';
-        scoreInputDiv.innerHTML = `
-            <fieldset class="layui-elem-field">
-                <legend>记录分数</legend>
-                <div class="layui-field-box">
-                    <form class="layui-form">
-                        <div class="layui-form-item">
-                            <div class="layui-inline">
-                                <label class="layui-form-label">${CONFIG.players[0].name}</label>
-                                <div class="layui-input-inline">
-                                    <input type="number" name="score1" placeholder="分数" class="layui-input">
-                                </div>
-                            </div>
-                            <div class="layui-inline">
-                                <label class="layui-form-label">${CONFIG.players[1].name}</label>
-                                <div class="layui-input-inline">
-                                    <input type="number" name="score2" placeholder="分数" class="layui-input">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="layui-form-item">
-                            <div class="layui-inline">
-                                <label class="layui-form-label">${CONFIG.players[2].name}</label>
-                                <div class="layui-input-inline">
-                                    <input type="number" name="score3" placeholder="分数" class="layui-input">
-                                </div>
-                            </div>
-                            <div class="layui-inline">
-                                <label class="layui-form-label">${CONFIG.players[3].name}</label>
-                                <div class="layui-input-inline">
-                                    <input type="number" name="score4" placeholder="分数" class="layui-input">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="layui-form-item">
-                            <button class="layui-btn layui-btn-primary" type="button" id="add-score-btn">提交分数</button>
-                        </div>
-                    </form>
-                </div>
-            </fieldset>
-        `;
-        container.insertBefore(scoreInputDiv, container.lastElementChild);
-
-        // 添加分数提交按钮事件
-        document.querySelector('#add-score-btn').addEventListener('click', addScores);
+    // 初始化分数输入区域
+    function initializeScoreInputDiv() {
+        document.querySelector('#player1-label').textContent = CONFIG.players[0].name;
+        document.querySelector('#player2-label').textContent = CONFIG.players[1].name;
+        document.querySelector('#player3-label').textContent = CONFIG.players[2].name;
+        document.querySelector('#player4-label').textContent = CONFIG.players[3].name;
     }
 
     // 添加分数并更新计分板
@@ -211,8 +232,18 @@
             player.blowRate = ((player.fourth / player.rounds) * 100).toFixed(1) + '%'; // 击飞率，保留一位小数
         });
 
-        // 更新计分板
+        // 保存当前分数到历史记录
+        CONFIG.scores.push(scores);
+        saveToLocalStorage(); // 保存到 localStorage
+
+        // 更新计分板和历史记录
         updateScoreTable();
+        updateHistoryRecords();
+
+        // 清空输入框，准备下一轮输入
+        CONFIG.players.forEach((_, index) => {
+            document.querySelector(`input[name="score${index + 1}"]`).value = '';
+        });
     }
 
     // 更新计分板
@@ -239,6 +270,30 @@
                 `;
                 tbody.appendChild(newRow);
             });
+    }
+
+    // 更新历史记录
+    function updateHistoryRecords() {
+        const historyDiv = document.querySelector('#history-records');
+        historyDiv.innerHTML = ''; // 清空历史记录
+
+        CONFIG.scores.forEach((roundScores, roundIndex) => {
+            const roundDiv = document.createElement('div');
+            roundDiv.className = 'history-round';
+            roundDiv.innerHTML = `
+                <p>第 ${roundIndex + 1} 局：</p>
+                <ul>
+                    ${roundScores.map((score, index) => `<li>${CONFIG.players[index].name}: ${score}</li>`).join('')}
+                </ul>
+            `;
+            historyDiv.appendChild(roundDiv);
+        });
+    }
+
+    // 保存数据到 localStorage
+    function saveToLocalStorage() {
+        localStorage.setItem('players', JSON.stringify(CONFIG.players));
+        localStorage.setItem('scores', JSON.stringify(CONFIG.scores));
     }
 </script>
 
