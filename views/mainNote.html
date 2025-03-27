@@ -165,9 +165,6 @@
             // 如果没有玩家数据，隐藏分数输入区域
             document.querySelector('#score-input-div').style.display = 'none';
         }
-
-        // 初始化提交分数按钮的事件监听器
-        document.querySelector('#add-score-btn').addEventListener('click', addScores);
     };
 
     // 确认玩家按钮点击事件
@@ -239,11 +236,6 @@
         // 更新计分板和历史记录
         updateScoreTable();
         updateHistoryRecords();
-
-        // 清空输入框，准备下一轮输入
-        CONFIG.players.forEach((_, index) => {
-            document.querySelector(`input[name="score${index + 1}"]`).value = '';
-        });
     }
 
     // 更新计分板
